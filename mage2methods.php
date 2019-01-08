@@ -68,7 +68,7 @@ foreach ($finder as $file) {
                 if ($method->getNumberOfParameters() > 0) {
                     $parameters = [];
                     foreach ($method->getParameters() as $parameter) {
-                        $parameters[$parameter->getName()] = '"' . $parameter->getName() . ':""';
+                        $parameters[$parameter->getName()] = '"' . $parameter->getName() . '":""';
                         if ($parameter->isDefaultValueAvailable()) {
                             $default = $parameter->getDefaultValue();
                             switch (gettype($default)) {
