@@ -48,11 +48,12 @@ $finder
     ->notName('InstallSchema*')
     ->notName('UpgradeData*')
     ->notName('registration.php')
+    ->notName('RecurringData.php')
+    ->notName('RecurringSchema.php')
     ->notName('UpgradeSchema*');
-$fp = fopen('mage2methods.csv', 'w');
-fputcsv($fp, ['full_classname', 'method', 'parameters']);
+$mage2methods = [];
 foreach ($finder as $file) {
-    if (strpos($file, 'module') === false) {
+    if (strpos($file, 'module') === false || strpos($file, '/Test/') !== false || strpos($file, '/Setup/') !== false) {
         continue;
     }
     $classNameByPath = getRealClassname($file, $classPrefix, $vendor);
@@ -61,14 +62,10 @@ foreach ($finder as $file) {
         foreach ($methods as $method) {
             $method = new \ReflectionMethod($classNameByPath, $method);
             if ($method->isPublic() && $method->getName() != '__construct') {
-                $result = [
-                    $classNameByPath,
-                    $method->getName()
-                ];
                 if ($method->getNumberOfParameters() > 0) {
                     $parameters = [];
                     foreach ($method->getParameters() as $parameter) {
-                        $parameters[$parameter->getName()] = '"' . $parameter->getName() . '":""';
+                        $parameters[$parameter->getName()] = '';
                         if ($parameter->isDefaultValueAvailable()) {
                             $default = $parameter->getDefaultValue();
                             switch (gettype($default)) {
@@ -85,17 +82,16 @@ foreach ($finder as $file) {
                                     $value = str_replace('"', '\"', var_export($default, true));
                                     break;
                             }
-                            $parameters[$parameter->getName()] = '"' . $parameter->getName() . '":"' . $value . '"';
+                            $parameters[$parameter->getName()] = $value;
                         }
                     }
-
-                    $jsonString = '{' . implode(',', $parameters) . '}';
-
-                    $result[] = $jsonString;
+                    $mage2methods[$method->getName()][$classNameByPath] = $parameters;
                 }
-                fputcsv($fp, $result, ';', "'");
             }
         }
     }
 }
+$fp = fopen('mage2methods.json', 'w');
+var_dump(count($mage2methods));
+fwrite($fp, json_encode($mage2methods));
 fclose($fp);
